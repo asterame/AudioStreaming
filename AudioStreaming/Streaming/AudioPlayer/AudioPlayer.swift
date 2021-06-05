@@ -132,7 +132,7 @@ open class AudioPlayer {
 
     var entriesQueue: PlayerQueueEntries
 
-    public init(configuration: AudioPlayerConfiguration = .default) {
+    public init(configuration: AudioPlayerConfiguration = .default, sessionConfiguration: URLSessionConfiguration? = nil) {
         self.configuration = configuration.normalizeValues()
 
         rendererContext = AudioRendererContext(configuration: configuration, outputAudioFormat: outputAudioFormat)
@@ -142,7 +142,7 @@ open class AudioPlayer {
         serializationQueue = DispatchQueue(label: "streaming.core.queue", qos: .userInitiated)
         sourceQueue = DispatchQueue(label: "source.queue", qos: .userInitiated)
 
-        entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(),
+        entryProvider = AudioEntryProvider(networkingClient: NetworkingClient(configuration: sessionConfiguration ?? .networkingConfiguration),
                                            underlyingQueue: sourceQueue,
                                            outputAudioFormat: outputAudioFormat)
 
