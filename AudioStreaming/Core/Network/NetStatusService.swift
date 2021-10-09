@@ -30,6 +30,7 @@ protocol NetStatusProvider {
     func stop()
 }
 
+@available(iOS 12.0, *)
 final class NetStatusService: NetStatusProvider {
     var isConnected: Bool {
         network.currentPath.status == .satisfied
@@ -81,6 +82,7 @@ final class NetStatusService: NetStatusProvider {
     }
 }
 
+@available(iOS 12.0, *)
 extension NWPath {
     func toNetConnectionType() -> NetConnectionType {
         let isCellular = usesInterfaceType(.cellular)

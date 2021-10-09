@@ -45,14 +45,14 @@ public class RemoteAudioSource: AudioStreamSource {
 
     internal let underlyingQueue: DispatchQueue
     internal let streamOperationQueue: OperationQueue
-    internal let netStatusService: NetStatusProvider
+    internal let netStatusService: NetStatusProvider?
     internal var waitingForNetwork = false
     internal let retrierTimeout: Retrier
 
     init(networking: NetworkingClient,
          metadataStreamSource: MetadataStreamSource,
          icycastHeadersProcessor: IcycastHeadersProcessor,
-         netStatusProvider: NetStatusProvider,
+         netStatusProvider: NetStatusProvider?,
          retrier: Retrier,
          url: URL,
          underlyingQueue: DispatchQueue,
@@ -84,7 +84,12 @@ public class RemoteAudioSource: AudioStreamSource {
     {
         let metadataParser = MetadataParser()
         let metadataProcessor = MetadataStreamProcessor(parser: metadataParser.eraseToAnyParser())
-        let netStatusProvider = NetStatusService(network: NWPathMonitor())
+        let netStatusProvider: NetStatusProvider?
+        if #available(iOS 12.0, *) {
+            netStatusProvider = NetStatusService(network: NWPathMonitor())
+        } else {
+            netStatusProvider = nil
+        }
         let icyheaderProcessor = IcycastHeadersProcessor()
         let retrierTimeout = Retrier(interval: .seconds(1), maxInterval: 5, underlyingQueue: nil)
         self.init(networking: networking,
@@ -109,7 +114,7 @@ public class RemoteAudioSource: AudioStreamSource {
 
     func close() {
         retrierTimeout.cancel()
-        netStatusService.stop()
+        netStatusService?.stop()
         streamOperationQueue.cancelAllOperations()
         if let streamTask = streamRequest {
             streamTask.cancel()
@@ -149,7 +154,7 @@ public class RemoteAudioSource: AudioStreamSource {
     // MARK: Private
 
     private func startNetworkService() {
-        netStatusService.start { [weak self] connection in
+        netStatusService?.start { [weak self] connection in
             guard let self = self else { return }
             guard connection.isConnected else { return }
             if self.waitingForNetwork {
@@ -219,7 +224,7 @@ public class RemoteAudioSource: AudioStreamSource {
                 }
             }
         case .failure:
-            if !netStatusService.isConnected {
+            if let netStatusService = netStatusService, !netStatusService.isConnected {
                 waitingForNetwork = true
                 return
             }
